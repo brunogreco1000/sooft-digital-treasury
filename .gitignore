@@ -1,0 +1,34 @@
+# ---------------------------------------------------------------- #
+# 1. Directorios de Dependencias Generados por Node (CRUCIAL)
+# ---------------------------------------------------------------- #
+
+# Carpetas de Node_modules en el backend y frontend
+/backend/node_modules
+/frontend/node_modules
+/node_modules
+
+
+# ---------------------------------------------------------------- #
+# 2. Archivos Sensibles y de Configuración Local
+# ---------------------------------------------------------------- #
+
+# Variables de entorno - ¡NUNCA SUBIR DATOS SENSIBLES!
+.env
+.env.*
+
+# Configuración de tu editor (Visual Studio Code)
+.vscode/
+
+
+# ---------------------------------------------------------------- #
+# 3. Archivos de Salida y Cache Generados por el Compilador
+# ---------------------------------------------------------------- #
+
+# Archivos de salida de NestJS/TypeScript
+/backend/dist
+/dist
+
+# Cache y logs
+npm-debug.log*
+yarn-debug.log*
+*.tsbuildinfo

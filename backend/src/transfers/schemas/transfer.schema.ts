@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
+
+export type TransferDocument = Transfer & Document;
 
 @Schema({ timestamps: true })
-export class Transfer extends Document {
+export class Transfer {
   @Prop({ required: true })
   userId!: string;
 
@@ -18,9 +20,12 @@ export class Transfer extends Document {
   @Prop({ required: true })
   amount!: number;
 
-  @Prop({ enum: ['ingreso', 'egreso'], default: 'egreso' })
+  @Prop({ required: true, enum: ['ingreso', 'egreso'] })
   type!: 'ingreso' | 'egreso';
-}
 
+  _id!: Types.ObjectId; // <-- importante para TypeScript
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export const TransferSchema = SchemaFactory.createForClass(Transfer);

@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import api from '../../../services/axios';
+import { useEffect } from 'react';
 import { useDashboard } from '../../../context/DashboardContext';
 import Card from '../../../components/ui/Card';
 import Table from '../../../components/ui/Table';
+import Chart from '../../../components/ui/Chart';
+
+interface Movement {
+  _id: string;
+  concept: string;
+  amount: number;
+  date: string;
+  type?: 'ingreso' | 'egreso'; // puede venir undefined
+}
 
 export default function DashboardPage() {
   const { summary, movements, loading, error, fetchDashboard } = useDashboard();
@@ -12,6 +20,35 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboard();
   }, []);
+
+  // Datos para gráfico de movimientos
+  const chartData = {
+    labels: movements.map((m) => new Date(m.date).toLocaleDateString()),
+    datasets: [
+      {
+        label: 'Ingresos',
+        data: movements.map((m) => (m.type === 'ingreso' ? m.amount : 0)),
+        borderColor: 'rgb(34,197,94)', // verde
+        backgroundColor: 'rgba(34,197,94,0.3)',
+        tension: 0.3,
+      },
+      {
+        label: 'Egresos',
+        data: movements.map((m) => (m.type === 'egreso' ? m.amount : 0)),
+        borderColor: 'rgb(239,68,68)', // rojo
+        backgroundColor: 'rgba(239,68,68,0.3)',
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' as const },
+      title: { display: true, text: 'Movimientos Financieros' },
+    },
+  };
 
   return (
     <section className="max-w-6xl mx-auto mt-10 p-6 space-y-6 text-white">
@@ -39,30 +76,31 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <Card title="Últimas Transferencias">
+          <Card title="Movimientos">
             {movements.length === 0 ? (
               <p className="text-gray-300">No tienes transferencias aún.</p>
             ) : (
               <Table
-                headers={['Concepto', 'Monto', 'Fecha']}
+                headers={['Concepto', 'Monto', 'Fecha', 'Tipo']}
                 data={movements}
                 renderRow={(t) => (
                   <tr key={t._id}>
                     <td className="px-6 py-4">{t.concept}</td>
                     <td className="px-6 py-4">${t.amount}</td>
                     <td className="px-6 py-4">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">{t.type}</td>
                   </tr>
                 )}
               />
             )}
           </Card>
 
-          <Card title="Alertas">
-            <p className="text-gray-300">
-              {movements.length === 0
-                ? '¡Aún no hay alertas para mostrar!'
-                : 'Aquí se mostrarán alertas importantes.'}
-            </p>
+          <Card title="Gráfico de Movimientos">
+            {movements.length === 0 ? (
+              <p className="text-gray-300">No hay movimientos para graficar.</p>
+            ) : (
+              <Chart data={chartData} options={chartOptions} />
+            )}
           </Card>
         </>
       )}

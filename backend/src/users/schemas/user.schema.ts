@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
+
+export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
-export class User extends Document {
+export class User {
   @Prop({ required: true, unique: true })
   username!: string;
 
@@ -11,6 +13,12 @@ export class User extends Document {
 
   @Prop({ required: true })
   password!: string;
+
+  // <-- Añadimos _id explícitamente para TypeScript
+  _id!: Types.ObjectId;
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

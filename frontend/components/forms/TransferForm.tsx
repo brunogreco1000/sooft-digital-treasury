@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import InputField from '../ui/InputField';
 import { Button } from '../ui/Button';
@@ -14,6 +15,7 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
   const [concept, setConcept] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(''); // <-- nuevo estado para la fecha
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,13 +24,14 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
   const recipientValid = recipient.trim().length >= 3;
   const conceptValid = concept.trim().length > 0;
   const amountValid = !isNaN(Number(amount)) && Number(amount) > 0;
+  const dateValid = date !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!recipientValid || !conceptValid || !amountValid) {
+    if (!recipientValid || !conceptValid || !amountValid || !dateValid) {
       setError('Por favor corrige los campos antes de enviar.');
       return;
     }
@@ -43,14 +46,17 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
           description: description.trim(),
           amount: Number(amount),
           type: 'egreso', // por defecto egreso
+          date, // <-- enviar fecha al backend
         },
         { withCredentials: true }
       );
 
+      // Limpiar campos
       setRecipient('');
       setConcept('');
       setDescription('');
       setAmount('');
+      setDate('');
       setSuccess('Transferencia creada correctamente.');
       onSuccess?.();
     } catch (err: any) {
@@ -105,6 +111,15 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
         placeholder="0.00"
         type="number"
         id="transfer-amount"
+      />
+
+      <InputField
+        label="Fecha"
+        value={date}
+        onChange={setDate}
+        valid={dateValid || date === ''}
+        type="date"
+        id="transfer-date"
       />
 
       <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>

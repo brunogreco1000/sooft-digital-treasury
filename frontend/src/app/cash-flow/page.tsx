@@ -14,7 +14,7 @@ interface Transfer {
   description?: string;
   amount: number;
   date: string;
-  type?: 'ingreso' | 'egreso';
+  type?: 'ingreso' | 'egreso'; // puede venir undefined
 }
 
 export default function CashFlowPage() {
@@ -35,10 +35,10 @@ export default function CashFlowPage() {
       setTransfers(data);
       setError(null);
 
-      // Calcular saldo: ingresos suman, egresos restan
+      // Calcular saldo: asumir 'egreso' por defecto si no viene type
       const total = data.reduce((acc, t) => {
-        if (t.type === 'ingreso') return acc + t.amount;
-        return acc - t.amount; // egreso
+        const tipo = t.type ?? 'egreso';
+        return tipo === 'ingreso' ? acc + t.amount : acc - t.amount;
       }, 0);
       setSaldo(total);
     } catch (err: any) {

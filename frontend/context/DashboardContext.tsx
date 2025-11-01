@@ -11,6 +11,7 @@ interface Transfer {
   currency: string;
   date: string;
   status: 'pendiente' | 'aprobado' | 'fallido';
+  type: 'ingreso' | 'egreso';
 }
 
 interface Alert {

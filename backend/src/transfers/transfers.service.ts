@@ -9,7 +9,12 @@ export class TransfersService {
   constructor(@InjectModel(Transfer.name) private readonly transferModel: Model<TransferDocument>) {}
 
   async create(userId: string, dto: CreateTransferDto): Promise<TransferDocument> {
-    const created = new this.transferModel({ ...dto, userId });
+    const transferData = {
+      ...dto,
+      userId,
+      date: dto.date ?? new Date(), // asegura fecha válida
+    };
+    const created = new this.transferModel(transferData);
     return created.save();
   }
 

@@ -23,7 +23,19 @@ export class Transfer {
   @Prop({ required: true, enum: ['ingreso', 'egreso'] })
   type!: 'ingreso' | 'egreso';
 
-  _id!: Types.ObjectId; // <-- importante para TypeScript
+  @Prop({ default: () => new Date() })
+  date?: Date;
+
+  @Prop({ default: 'pendiente', enum: ['pendiente', 'aprobado', 'fallido'] })
+  status?: 'pendiente' | 'aprobado' | 'fallido';
+
+  @Prop()
+  reference?: string; // identificador único o número de transacción
+
+  @Prop()
+  notes?: string;
+
+  _id!: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

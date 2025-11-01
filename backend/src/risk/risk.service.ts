@@ -13,9 +13,9 @@ export class RiskService {
     return risk.save();
   }
 
-  async findByUser(userId: string): Promise<Risk> {
-    const risk = await this.riskModel.findOne({ userId }).exec();
-    if (!risk) throw new NotFoundException('Risk data not found');
-    return risk;
+  async findByUser(userId: string): Promise<Risk[]> {
+    const risks = await this.riskModel.find({ userId: new Types.ObjectId(userId) }).exec();
+    if (!risks || risks.length === 0) throw new NotFoundException('No se encontraron riesgos');
+    return risks;
   }
 }

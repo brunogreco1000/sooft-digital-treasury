@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import api from '../../../services/axios';
 import { useAuth } from '../../../context/AuthContext';
-import { useRouter } from 'next/navigation';
-import TransferForm from '../../../components/forms/TransferForm';
 import Card from '../../../components/ui/Card';
-import Table from '../../../components/ui/Table';
+import TransferForm from '../../../components/forms/TransferForm';
+import Alert from '../../../components/ui/Alert';
+import MovementsTable from '../../../components/ui/MovementsTable';
+import { Movement } from '../../../context/MovementsContext';
 
 interface Transfer {
   _id: string;
@@ -13,22 +14,20 @@ interface Transfer {
   concept: string;
   description?: string;
   amount: number;
+  date: string;
   type: 'ingreso' | 'egreso';
-  createdAt: string;
+  status?: 'pendiente' | 'aprobado' | 'fallido';
+  reference?: string;
+  notes?: string;
 }
 
 export default function TransfersPage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/login');
-  }, [user, loading, router]);
 
   const fetchTransfers = async () => {
     if (!user) return;
@@ -38,34 +37,38 @@ export default function TransfersPage() {
       setTransfers(res.data || []);
       setError(null);
     } catch (err: any) {
-      console.error('Error al obtener transferencias:', err.response?.status);
-      if (err.response?.status === 403) {
-        setError('No autorizado. Por favor inicia sesión nuevamente.');
-        setTransfers([]);
-      } else if (err.response?.status === 404) {
-        setTransfers([]);
-        setError(null);
-      } else {
-        setError('Ocurrió un error al cargar las transferencias.');
-        setTransfers([]);
-      }
+      setError('Ocurrió un error al cargar las transferencias.');
+      setTransfers([]);
     } finally {
       setLoadingTransfers(false);
     }
   };
 
   useEffect(() => {
+    if (!loading && !user) return;
     fetchTransfers();
-  }, [user]);
+  }, [user, loading]);
 
-  if (loading || !user) {
-    return <p className="text-center mt-10 text-gray-700">Cargando...</p>;
-  }
+  if (loading || !user) return <p className="text-center mt-10 text-gray-700">Cargando...</p>;
+
+  // Convertimos Transfer[] a Movement[] sin cambiar date a Date
+  const movements: Movement[] = transfers.map(t => ({
+    _id: t._id,
+    recipient: t.recipient,
+    concept: t.concept,
+    description: t.description,
+    amount: t.amount,
+    date: t.date, // <-- mantener como string
+    type: t.type,
+    status: t.status,
+    reference: t.reference,
+    notes: t.notes,
+  }));
 
   return (
-    <section className="max-w-7xl mx-auto mt-10 p-6 space-y-6">
-      <h1 className="text-3xl font-bold mb-4">Transferencias</h1>
-      <p className="mb-6 text-gray-700">
+    <section className="max-w-6xl mx-auto mt-10 p-6 space-y-6">
+      <h1 className="text-3xl font-bold mb-2">Transferencias</h1>
+      <p className="mb-4 text-gray-700">
         Aquí podrás crear nuevas transferencias y revisar tus transferencias recientes.
       </p>
 
@@ -76,40 +79,26 @@ export default function TransfersPage() {
         {showForm ? 'Cerrar formulario' : 'Crear nueva transferencia'}
       </button>
 
-      {showForm && <TransferForm onSuccess={() => { setShowForm(false); fetchTransfers(); }} />}
-
-      {loadingTransfers ? (
-        <p className="text-gray-500">Cargando transferencias...</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
-      ) : transfers.length === 0 ? (
-        <Card title="Tus transferencias">
-          <p className="text-gray-700">¡Aún no tienes transferencias! Usa el botón de arriba para crear tu primera.</p>
-        </Card>
-      ) : (
-        <Card title="Tus transferencias">
-          <Table
-            headers={['Destinatario', 'Concepto', 'Descripción', 'Monto', 'Fecha', 'Tipo']}
-            data={transfers}
-            renderRow={(t) => (
-              <tr key={t._id}>
-                <td className="px-6 py-4">{t.recipient}</td>
-                <td className="px-6 py-4">{t.concept}</td>
-                <td className="px-6 py-4">{t.description || '-'}</td>
-                <td className="px-6 py-4">${t.amount}</td>
-                <td className="px-6 py-4">
-                  {new Date(t.createdAt).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
-                </td>
-                <td className="px-6 py-4">{t.type.charAt(0).toUpperCase() + t.type.slice(1)}</td>
-              </tr>
-            )}
-          />
-        </Card>
+      {showForm && (
+        <TransferForm
+          onSuccess={() => {
+            fetchTransfers();
+            setShowForm(false);
+          }}
+        />
       )}
+
+      {error && <Alert message={error} type="error" onClose={() => setError(null)} />}
+
+      <Card title="Tus transferencias">
+        {loadingTransfers ? (
+          <p className="text-gray-500">Cargando transferencias...</p>
+        ) : transfers.length === 0 ? (
+          <p className="text-gray-700">Aún no tienes transferencias registradas.</p>
+        ) : (
+          <MovementsTable movements={movements} />
+        )}
+      </Card>
     </section>
   );
 }

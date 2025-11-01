@@ -1,17 +1,24 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { useState, useEffect } from 'react';
 import api from '../../../services/axios';
 import Card from '../../../components/ui/Card';
 import Table from '../../../components/ui/Table';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface Movimiento {
-  fecha: string;
-  concepto: string;
-  monto: number;
-  currency?: string;
+  _id: string;
+  date: string;
+  recipient: string;
+  concept: string;
+  description?: string;
+  amount: number;
+  currency: string;
+  type: 'ingreso' | 'egreso';
+  status: 'pendiente' | 'aprobado' | 'fallido';
+  reference?: string;
+  notes?: string;
 }
 
 export default function ReportsPage() {
@@ -22,10 +29,10 @@ export default function ReportsPage() {
   useEffect(() => {
     async function fetchMovimientos() {
       try {
-        const res = await api.get('/payments', { withCredentials: true });
+        const res = await api.get<Movimiento[]>('/transfers', { withCredentials: true });
         setMovimientos(res.data || []);
       } catch (err) {
-        console.error('Error al obtener movimientos:', err);
+        console.error(err);
         setError('No se pudieron cargar los reportes. Intenta nuevamente.');
       } finally {
         setLoading(false);
@@ -34,15 +41,32 @@ export default function ReportsPage() {
     fetchMovimientos();
   }, []);
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+  const formatCurrency = (amount: number, currency = 'ARS') =>
+    new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  // Saldo acumulado
+  const movimientosConSaldo = movimientos.reduce<Movimiento[]>((acc, m, i) => {
+    const prevSaldo = acc[i - 1]?.amount ?? 0;
+    const saldo = m.type === 'ingreso' ? prevSaldo + m.amount : prevSaldo - m.amount;
+    acc.push({ ...m, amount: saldo });
+    return acc;
+  }, []);
 
   const generatePDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text('Reporte de Movimientos Financieros', 14, 15);
     doc.setFontSize(12);
-    doc.text(`Generado: ${new Date().toLocaleDateString()}`, 14, 25);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 25);
 
     let y = 40;
     movimientos.forEach((item) => {
@@ -51,9 +75,7 @@ export default function ReportsPage() {
         y = 20;
       }
       doc.text(
-        `${new Date(item.fecha).toLocaleDateString()} | ${item.concepto} | ${formatCurrency(
-          item.monto
-        )}`,
+        `${formatDate(item.date)} | ${item.recipient} | ${item.concept} | ${item.description || '-'} | ${formatCurrency(item.amount, item.currency)} | ${item.type} | ${item.status}`,
         14,
         y
       );
@@ -65,9 +87,15 @@ export default function ReportsPage() {
 
   const generateExcel = () => {
     const wsData = movimientos.map((item) => ({
-      Fecha: new Date(item.fecha).toLocaleDateString(),
-      Concepto: item.concepto,
-      Monto: item.monto,
+      Fecha: formatDate(item.date),
+      Destinatario: item.recipient,
+      Concepto: item.concept,
+      Descripción: item.description || '-',
+      Monto: formatCurrency(item.amount, item.currency),
+      Tipo: item.type,
+      Estado: item.status,
+      Referencia: item.reference || '-',
+      Notas: item.notes || '-',
     }));
     const ws = XLSX.utils.json_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
@@ -85,7 +113,7 @@ export default function ReportsPage() {
     );
 
   return (
-    <section className="max-w-5xl mx-auto mt-10 p-6">
+    <section className="max-w-6xl mx-auto mt-10 p-6">
       <h1 className="text-3xl font-bold mb-6 text-white">Reportes Financieros</h1>
 
       <Card title="Movimientos Financieros">
@@ -98,13 +126,29 @@ export default function ReportsPage() {
             </p>
 
             <Table
-              headers={['Fecha', 'Concepto', 'Monto']}
+              headers={[
+                'Fecha y Hora',
+                'Destinatario',
+                'Concepto',
+                'Descripción',
+                'Monto',
+                'Tipo',
+                'Estado',
+                'Referencia',
+                'Notas',
+              ]}
               data={movimientos}
-              renderRow={(mov, idx) => (
-                <tr key={idx} className="hover:bg-gray-700 transition-colors">
-                  <td className="px-6 py-2">{new Date(mov.fecha).toLocaleDateString()}</td>
-                  <td className="px-6 py-2">{mov.concepto}</td>
-                  <td className="px-6 py-2">{formatCurrency(mov.monto)}</td>
+              renderRow={(mov) => (
+                <tr key={mov._id} className="hover:bg-gray-700 transition-colors">
+                  <td className="px-6 py-2">{formatDate(mov.date)}</td>
+                  <td className="px-6 py-2">{mov.recipient}</td>
+                  <td className="px-6 py-2">{mov.concept || 'Sin concepto'}</td>
+                  <td className="px-6 py-2">{mov.description || '-'}</td>
+                  <td className="px-6 py-2">{formatCurrency(mov.amount, mov.currency)}</td>
+                  <td className="px-6 py-2">{mov.type}</td>
+                  <td className="px-6 py-2">{mov.status}</td>
+                  <td className="px-6 py-2">{mov.reference || '-'}</td>
+                  <td className="px-6 py-2">{mov.notes || '-'}</td>
                 </tr>
               )}
             />

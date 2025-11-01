@@ -5,14 +5,21 @@ export type RiskDocument = Risk & Document;
 
 @Schema({ timestamps: true })
 export class Risk {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId?: Types.ObjectId;
+  @Prop({ required: true })
+  userId!: Types.ObjectId;
 
   @Prop({ required: true })
-  score?: number;
+  riskLevel!: 'Bajo' | 'Medio' | 'Alto';
 
-  @Prop({ default: '' })
+  @Prop({ required: true })
+  category!: string;
+
+  @Prop()
   notes?: string;
+
+  _id!: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const RiskSchema = SchemaFactory.createForClass(Risk);

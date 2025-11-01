@@ -1,4 +1,3 @@
-// components/ui/InputField.tsx
 'use client';
 import { forwardRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -29,7 +28,10 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           aria-invalid={valid === false}
-          className="border p-2 rounded w-full bg-gray-800 text-white placeholder-gray-400"
+          className={clsx(
+            'border p-2 rounded w-full bg-gray-800 text-white placeholder-gray-400',
+            valid === false && 'border-red-500'
+          )}
         />
         <FontAwesomeIcon
           icon={value ? (valid ? faCheck : faTimes) : faCircle}

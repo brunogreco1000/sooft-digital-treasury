@@ -1,4 +1,3 @@
-// components/ui/Table.tsx
 'use client';
 import clsx from 'clsx';
 

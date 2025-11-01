@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../../../services/axios';
 import { useAuth } from '../../../context/AuthContext';
 import Card from '../../../components/ui/Card';
-import Table from '../../../components/ui/Table';
-import TransferForm from '../../../components/forms/TransferForm';
 import Alert from '../../../components/ui/Alert';
+import MovementsTable from '../../../components/ui/MovementsTable';
+import { Movement } from '../../../context/MovementsContext';
 
 interface Transfer {
   _id: string;
@@ -14,37 +14,30 @@ interface Transfer {
   description?: string;
   amount: number;
   date: string;
-  type?: 'ingreso' | 'egreso'; // puede venir undefined
+  // type puede ser undefined en algunos registros antiguos
+  type?: 'ingreso' | 'egreso';
+  status?: 'pendiente' | 'aprobado' | 'fallido';
+  reference?: string;
+  notes?: string;
 }
 
 export default function CashFlowPage() {
   const { user, loading } = useAuth();
 
   const [transfers, setTransfers] = useState<Transfer[]>([]);
-  const [saldo, setSaldo] = useState(0);
   const [loadingTransfers, setLoadingTransfers] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
   const fetchTransfers = async () => {
     if (!user) return;
     setLoadingTransfers(true);
     try {
       const res = await api.get<Transfer[]>('/transfers', { withCredentials: true });
-      const data = res.data || [];
-      setTransfers(data);
+      setTransfers(res.data || []);
       setError(null);
-
-      // Calcular saldo: asumir 'egreso' por defecto si no viene type
-      const total = data.reduce((acc, t) => {
-        const tipo = t.type ?? 'egreso';
-        return tipo === 'ingreso' ? acc + t.amount : acc - t.amount;
-      }, 0);
-      setSaldo(total);
     } catch (err: any) {
       setError('Ocurrió un error al cargar el flujo de caja.');
       setTransfers([]);
-      setSaldo(0);
     } finally {
       setLoadingTransfers(false);
     }
@@ -55,52 +48,39 @@ export default function CashFlowPage() {
     fetchTransfers();
   }, [user, loading]);
 
-  if (loading || !user) return <p className="text-center mt-10 text-gray-700">Cargando...</p>;
+  if (loading || !user)
+    return <p className="text-center mt-10 text-gray-700">Cargando...</p>;
+
+  // Mapeamos Transfer a Movement
+  const movements: Movement[] = useMemo(() => 
+    transfers.map(t => ({
+      _id: t._id,
+      recipient: t.recipient || 'N/A',
+      concept: t.concept,
+      description: t.description,
+      amount: t.amount,
+      date: t.date,
+      type: t.type || 'egreso', // valor por defecto
+      status: t.status,
+      reference: t.reference,
+      notes: t.notes,
+    }))
+  , [transfers]);
 
   return (
     <section className="max-w-6xl mx-auto mt-10 p-6 space-y-6">
       <h1 className="text-3xl font-bold mb-2">Flujo de Caja</h1>
-      <p className="mb-4 text-gray-700">
-        Aquí podrás ver ingresos, egresos y saldo disponible. También puedes crear nuevas transferencias.
-      </p>
-
-      <button
-        className="bg-blue-600 text-white px-4 py-2 rounded mb-6 hover:bg-blue-700"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? 'Cerrar formulario' : 'Crear nueva transferencia'}
-      </button>
-
-      {showForm && (
-        <TransferForm
-          onSuccess={() => {
-            fetchTransfers();
-            setShowForm(false);
-          }}
-        />
-      )}
+      <p className="mb-4 text-gray-700">Aquí podrás ver ingresos, egresos y saldo disponible.</p>
 
       {error && <Alert message={error} type="error" onClose={() => setError(null)} />}
 
-      <Card title={`Saldo disponible: $${saldo.toFixed(2)}`}>
+      <Card title={`Saldo disponible: $${movements.reduce((acc, m) => m.type === 'ingreso' ? acc + m.amount : acc - m.amount, 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}>
         {loadingTransfers ? (
           <p className="text-gray-500">Cargando movimientos...</p>
-        ) : transfers.length === 0 ? (
+        ) : movements.length === 0 ? (
           <p className="text-gray-700">Aún no tienes movimientos registrados.</p>
         ) : (
-          <Table
-            headers={['Fecha', 'Destinatario', 'Concepto', 'Descripción', 'Monto']}
-            data={transfers}
-            renderRow={(t) => (
-              <tr key={t._id}>
-                <td className="px-6 py-4">{new Date(t.date).toLocaleString()}</td>
-                <td className="px-6 py-4">{t.recipient}</td>
-                <td className="px-6 py-4">{t.concept}</td>
-                <td className="px-6 py-4">{t.description || '-'}</td>
-                <td className="px-6 py-4">${t.amount.toFixed(2)}</td>
-              </tr>
-            )}
-          />
+          <MovementsTable movements={movements} />
         )}
       </Card>
     </section>

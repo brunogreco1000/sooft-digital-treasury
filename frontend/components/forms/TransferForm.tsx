@@ -4,7 +4,7 @@ import { useState } from 'react';
 import InputField from '../ui/InputField';
 import { Button } from '../ui/Button';
 import Alert from '../ui/Alert';
-import axios from '../../services/axios';
+import api from '../../services/axios';
 
 interface TransferFormProps {
   onSuccess?: () => void;
@@ -15,7 +15,7 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
   const [concept, setConcept] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(''); // <-- nuevo estado para la fecha
+  const [date, setDate] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,8 +37,9 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
     }
 
     setIsSubmitting(true);
+
     try {
-      await axios.post(
+      await api.post(
         '/transfers',
         {
           recipient: recipient.trim(),
@@ -46,9 +47,9 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
           description: description.trim(),
           amount: Number(amount),
           type: 'egreso', // por defecto egreso
-          date, // <-- enviar fecha al backend
+          date: new Date(date), // <-- convertir string a Date
         },
-        { withCredentials: true }
+        { withCredentials: true } // ya lo tienes en api, pero no hace daño
       );
 
       // Limpiar campos

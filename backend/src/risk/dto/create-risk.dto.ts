@@ -1,8 +1,14 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
 
 export class CreateRiskDto {
-  @IsNumber()
-  score?: number;
+  @IsString()
+  @IsNotEmpty()
+  category!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['Bajo', 'Medio', 'Alto'])
+  riskLevel!: 'Bajo' | 'Medio' | 'Alto';
 
   @IsString()
   @IsOptional()

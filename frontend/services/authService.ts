@@ -1,12 +1,12 @@
 // frontend/services/authService.ts
 import api from './axios';
 
-interface LoginData {
-  email: string;
+export interface LoginData {
+  username: string;
   password: string;
 }
 
-interface RegisterData {
+export interface RegisterData {
   username: string;
   email: string;
   password: string;
@@ -15,6 +15,10 @@ interface RegisterData {
 export const login = async (data: LoginData) => {
   const res = await api.post('/auth/login', data, { withCredentials: true });
   return res.data;
+};
+
+export const loginWithGoogle = () => {
+  window.location.href = '/auth/google';
 };
 
 export const register = async (data: RegisterData) => {

@@ -1,25 +1,25 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { PaymentsModule } from './payments/payments.module'; 
+import { PaymentsModule } from './payments/payments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { RiskModule } from './risk/risk.module';
+import { TransfersModule } from './transfers/transfers.module'; // <--- agregar esto
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URI'),
-      }),
-      inject: [ConfigService],
-    }),
+    DatabaseModule, 
     AuthModule,
     UsersModule,
     PaymentsModule,
-    DashboardModule, 
+    DashboardModule,
+    PortfolioModule,
+    RiskModule,
+    TransfersModule, 
   ],
 })
 export class AppModule {}

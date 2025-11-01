@@ -17,7 +17,7 @@ export default function ContactPage() {
         <div className="flex items-center gap-4">
           <HiOutlineMail className="text-blue-600 w-8 h-8" />
           <div>
-            <p className="font-semibold text-gray-800">Soporte</p>
+            <p className="font-semibold text-gray-800 text-white">Soporte</p>
             <a href="mailto:soporte@sooft.com" className="text-blue-600 hover:underline">
               soporte@sooft.com
             </a>
@@ -28,7 +28,7 @@ export default function ContactPage() {
         <div className="flex items-center gap-4">
           <HiOutlinePhone className="text-green-600 w-8 h-8" />
           <div>
-            <p className="font-semibold text-gray-800">Teléfono</p>
+            <p className="font-semibold text-gray-800 text-white">Teléfono</p>
             <a href="tel:+541112345678" className="text-blue-600 hover:underline">
               +54 11 1234-5678
             </a>

@@ -6,6 +6,7 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { AuthProvider } from '../../context/AuthContext';
 import { TransfersProvider } from '../../context/TransfersContext';
+import { DashboardProvider } from '../../context/DashboardContext'; // ✅ IMPORTANTE
 
 export const metadata = {
   title: 'SOOFT Digital Treasury',
@@ -18,10 +19,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
         <AuthProvider>
           <TransfersProvider>
-          <Header />
-          <Navbar />
-          <main className="flex-grow p-4">{children}</main>
-          <Footer />
+            <DashboardProvider> 
+              <Header />
+              <Navbar />
+              <main className="flex-grow p-4">{children}</main>
+              <Footer />
+            </DashboardProvider>
           </TransfersProvider>
         </AuthProvider>
       </body>

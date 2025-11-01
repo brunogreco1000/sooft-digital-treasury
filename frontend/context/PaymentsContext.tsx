@@ -1,4 +1,3 @@
-// frontend/context/PaymentsContext.tsx
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -10,7 +9,10 @@ interface Payment {
   concept: string;
   description: string;
   amount: number;
+  currency: string;
   date: string;
+  status: 'pendiente' | 'aprobado' | 'fallido';
+  recipient?: string; // opcional, para compatibilidad con workflow
 }
 
 interface PaymentsContextType {
@@ -18,7 +20,8 @@ interface PaymentsContextType {
   loading: boolean;
   error: string | null;
   fetchPayments: () => Promise<void>;
-  addPayment: (payment: Omit<Payment, '_id'>) => Promise<void>;
+  addPayment: (payment: Omit<Payment, '_id' | 'status'>) => Promise<void>;
+  updatePaymentStatus: (id: string, status: Payment['status']) => Promise<void>;
 }
 
 const PaymentsContext = createContext<PaymentsContextType | undefined>(undefined);
@@ -45,7 +48,7 @@ export const PaymentsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addPayment = async (payment: Omit<Payment, '_id'>) => {
+  const addPayment = async (payment: Omit<Payment, '_id' | 'status'>) => {
     if (!user) return;
     try {
       const res = await api.post('/payments', payment, { withCredentials: true });
@@ -56,12 +59,22 @@ export const PaymentsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updatePaymentStatus = async (id: string, status: Payment['status']) => {
+    try {
+      const res = await api.patch(`/payments/${id}/status`, { status }, { withCredentials: true });
+      setPayments(prev => prev.map(p => (p._id === id ? { ...p, status } : p)));
+    } catch (err) {
+      console.error('Error al actualizar estado del pago:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchPayments();
   }, [user]);
 
   return (
-    <PaymentsContext.Provider value={{ payments, loading, error, fetchPayments, addPayment }}>
+    <PaymentsContext.Provider value={{ payments, loading, error, fetchPayments, addPayment, updatePaymentStatus }}>
       {children}
     </PaymentsContext.Provider>
   );

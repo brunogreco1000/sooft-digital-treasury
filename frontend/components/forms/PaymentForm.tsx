@@ -1,66 +1,102 @@
-// components/forms/PaymentForm.tsx
 'use client';
-import { useState } from 'react';
-import InputField from '../ui/InputField';
-import axios from '../../services/axios';
+import { useState, FormEvent } from 'react';
+import { usePayments } from '../../context/PaymentsContext';
 import { Button } from '../ui/Button';
+import Alert from '../ui/Alert';
 
 interface PaymentFormProps {
   onSuccess?: () => void;
 }
 
 export default function PaymentForm({ onSuccess }: PaymentFormProps) {
-  const [concept, setConcept] = useState('');
+  const { addPayment } = usePayments();
+  const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
+  const [concept, setConcept] = useState('');
+  const [description, setDescription] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const conceptValid = concept.length >= 3;
-  const amountValid = !isNaN(Number(amount)) && Number(amount) > 0;
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!conceptValid || !amountValid) {
-      setError('Por favor corrige los campos antes de enviar.');
+    if (!recipient || !amount || !date || !concept || !description) {
+      setError('Todos los campos son obligatorios');
+      return;
+    }
+    if (isNaN(Number(amount)) || Number(amount) <= 0) {
+      setError('El monto debe ser un número positivo');
       return;
     }
 
+    setSubmitting(true);
     try {
-      await axios.post('/payments', { concept, amount: Number(amount) }, { withCredentials: true });
-      setConcept('');
+      await addPayment({ recipient, amount: Number(amount), date, concept, description, currency });
+      setRecipient('');
       setAmount('');
+      setDate('');
+      setConcept('');
+      setDescription('');
       onSuccess?.();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar el pago.');
+      setError(err.response?.data?.message || 'Error al registrar el pago');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-900 text-white p-6 rounded-lg shadow-lg max-w-md w-full">
-      <h2 className="text-xl font-bold mb-4">Registrar Pago</h2>
-      {error && <p className="text-red-500 mb-2">{error}</p>}
-
-      <InputField
-        label="Concepto"
-        value={concept}
-        onChange={setConcept}
-        valid={conceptValid || concept === ''}
-        placeholder="Descripción del pago"
-        id="concept"
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      {error && <Alert message={error} type="error" onClose={() => setError('')} />}
+      <input
+        type="text"
+        placeholder="Destinatario"
+        value={recipient}
+        onChange={(e) => setRecipient(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
       />
-
-      <InputField
-        label="Monto"
-        value={amount}
-        onChange={setAmount}
-        valid={amountValid || amount === ''}
-        placeholder="0.00"
+      <input
         type="number"
-        id="amount"
+        placeholder="Monto"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
       />
-
-      <Button type="submit" className="mt-4 w-full">Registrar Pago</Button>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
+      />
+      <input
+        type="text"
+        placeholder="Concepto"
+        value={concept}
+        onChange={(e) => setConcept(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
+      />
+      <input
+        type="text"
+        placeholder="Descripción"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
+      />
+      <select
+        value={currency}
+        onChange={(e) => setCurrency(e.target.value)}
+        className="p-2 rounded bg-gray-800 text-white border border-gray-700"
+      >
+        <option value="USD">USD</option>
+        <option value="ARS">ARS</option>
+        <option value="EUR">EUR</option>
+      </select>
+      <Button type="submit" disabled={submitting} className="mt-2 w-full">
+        {submitting ? 'Registrando...' : 'Registrar Pago'}
+      </Button>
     </form>
   );
 }

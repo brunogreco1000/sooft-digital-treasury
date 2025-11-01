@@ -10,13 +10,26 @@ export class DashboardService {
   ) {}
 
   async getDashboardData(userId: string) {
-    // Traer info del usuario
     const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    // Traer últimos movimientos del usuario (ej: últimos 10)
     const movements = await this.paymentsService.findAll(userId);
-    const lastMovements = movements.slice(0, 10);
+
+    // Ordenar por fecha descendente y tomar últimos 10 movimientos
+    const lastMovements = movements
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 10);
+
+    // Resumen financiero en un solo reduce
+    const summary = movements.reduce(
+      (acc, m) => {
+        if (m.amount > 0) acc.totalIngresos += m.amount;
+        else acc.totalEgresos += m.amount;
+        acc.balance += m.amount;
+        return acc;
+      },
+      { totalIngresos: 0, totalEgresos: 0, balance: 0 },
+    );
 
     return {
       user: {
@@ -25,15 +38,7 @@ export class DashboardService {
         email: user.email,
       },
       movements: lastMovements,
-      summary: {
-        totalIngresos: movements
-          .filter(m => m.amount > 0)
-          .reduce((sum, m) => sum + m.amount, 0),
-        totalEgresos: movements
-          .filter(m => m.amount < 0)
-          .reduce((sum, m) => sum + m.amount, 0),
-        balance: movements.reduce((sum, m) => sum + m.amount, 0),
-      },
+      summary,
     };
   }
 }

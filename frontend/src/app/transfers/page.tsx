@@ -7,16 +7,25 @@ import TransferForm from '../../../components/forms/TransferForm';
 import Card from '../../../components/ui/Card';
 import Table from '../../../components/ui/Table';
 
+interface Transfer {
+  _id: string;
+  recipient: string;
+  concept: string;
+  description?: string;
+  amount: number;
+  type: 'ingreso' | 'egreso';
+  createdAt: string;
+}
+
 export default function TransfersPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [transfers, setTransfers] = useState<any[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // Redirigir si no hay usuario
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
@@ -25,17 +34,21 @@ export default function TransfersPage() {
     if (!user) return;
     setLoadingTransfers(true);
     try {
-      const res = await api.get('/transfers', { withCredentials: true });
-      setTransfers(res.data);
+      const res = await api.get<Transfer[]>('/transfers', { withCredentials: true });
+      setTransfers(res.data || []);
       setError(null);
     } catch (err: any) {
       console.error('Error al obtener transferencias:', err.response?.status);
       if (err.response?.status === 403) {
         setError('No autorizado. Por favor inicia sesión nuevamente.');
+        setTransfers([]);
+      } else if (err.response?.status === 404) {
+        setTransfers([]);
+        setError(null);
       } else {
         setError('Ocurrió un error al cargar las transferencias.');
+        setTransfers([]);
       }
-      setTransfers([]);
     } finally {
       setLoadingTransfers(false);
     }
@@ -50,7 +63,7 @@ export default function TransfersPage() {
   }
 
   return (
-    <section className="max-w-6xl mx-auto mt-10 p-6 space-y-6">
+    <section className="max-w-7xl mx-auto mt-10 p-6 space-y-6">
       <h1 className="text-3xl font-bold mb-4">Transferencias</h1>
       <p className="mb-6 text-gray-700">
         Aquí podrás crear nuevas transferencias y revisar tus transferencias recientes.
@@ -76,13 +89,22 @@ export default function TransfersPage() {
       ) : (
         <Card title="Tus transferencias">
           <Table
-            headers={['Concepto', 'Monto', 'Fecha']}
+            headers={['Destinatario', 'Concepto', 'Descripción', 'Monto', 'Fecha', 'Tipo']}
             data={transfers}
-            renderRow={(t: any) => (
+            renderRow={(t) => (
               <tr key={t._id}>
+                <td className="px-6 py-4">{t.recipient}</td>
                 <td className="px-6 py-4">{t.concept}</td>
+                <td className="px-6 py-4">{t.description || '-'}</td>
                 <td className="px-6 py-4">${t.amount}</td>
-                <td className="px-6 py-4">{new Date(t.date).toLocaleDateString()}</td>
+                <td className="px-6 py-4">
+                  {new Date(t.createdAt).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })}
+                </td>
+                <td className="px-6 py-4">{t.type.charAt(0).toUpperCase() + t.type.slice(1)}</td>
               </tr>
             )}
           />

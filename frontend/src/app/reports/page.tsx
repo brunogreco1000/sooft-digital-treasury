@@ -11,6 +11,7 @@ interface Movimiento {
   fecha: string;
   concepto: string;
   monto: number;
+  currency?: string;
 }
 
 export default function ReportsPage() {
@@ -50,7 +51,9 @@ export default function ReportsPage() {
         y = 20;
       }
       doc.text(
-        `${new Date(item.fecha).toLocaleDateString()} | ${item.concepto} | ${formatCurrency(item.monto)}`,
+        `${new Date(item.fecha).toLocaleDateString()} | ${item.concepto} | ${formatCurrency(
+          item.monto
+        )}`,
         14,
         y
       );
@@ -83,11 +86,11 @@ export default function ReportsPage() {
 
   return (
     <section className="max-w-5xl mx-auto mt-10 p-6">
-      <h1 className="text-3xl font-bold mb-6 text-gray-900">Reportes Financieros</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Reportes Financieros</h1>
 
       <Card title="Movimientos Financieros">
         {movimientos.length === 0 ? (
-          <p className="text-gray-700 text-center">No hay movimientos registrados aún.</p>
+          <p className="text-gray-400 text-center">No hay movimientos registrados aún.</p>
         ) : (
           <>
             <p className="text-gray-400 mb-4">

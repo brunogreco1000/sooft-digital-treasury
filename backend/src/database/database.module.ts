@@ -1,24 +1,19 @@
-// backend/src/database/database.module.ts (Versión Corregida)
-
+// backend/src/database/database.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config'; // <-- Importar ConfigModule y ConfigService
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
-  imports: [
-    // 1. Necesitas importar ConfigModule (si aún no lo hiciste en app.module)
-    // Para el ejemplo, asumimos que está disponible.
-
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule], // Asegurarse de que el ConfigModule esté disponible
-      useFactory: async (configService: ConfigService) => ({
-        // 2. Usar configService para leer la URI
-        uri: configService.get<string>('MONGO_URI'),
-        // 3. Opcionalmente, puedes añadir opciones de conexión aquí
-      }),
-      inject: [ConfigService], // Inyectar el servicio de configuración
-    }),
-  ],
-  exports: [MongooseModule],
+  imports: [
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule], // ConfigModule ya global, pero se importa para tipado
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URI'),
+        // Opcional: puedes agregar useNewUrlParser, useUnifiedTopology si quieres
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  exports: [MongooseModule],
 })
 export class DatabaseModule {}
